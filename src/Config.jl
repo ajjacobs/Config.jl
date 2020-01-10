@@ -15,7 +15,7 @@ include("Save.jl")
 
 # Base Class
 include("Manager.jl")
-export ConfigManager, total_combinations, add!, parse!,
+export ConfigManager, iterator, total_combinations, add!, parse!,
     get_sweep_params, param_setting_from_id, params_with, param_values,
     get_datafile, get_stepslog, get_expdir, get_logdir,
     log_config, get_subconfig, get_attrs,

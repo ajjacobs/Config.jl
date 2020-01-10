@@ -34,6 +34,17 @@ function ConfigManager(config_file::String, rootdir::String, manager::DM = HDF5M
     return cm
 end
 
+function Base.copy(cm::ConfigManager{DM}) where {DM<:DataManager}
+    ConfigManager{DM}(
+        deepcopy(cm.config_dict),
+        copy(cm.parsed_config),
+        cm.total_combinations,
+        Dict("save_path"=>getPermutation(cm.parsed_config, 1)["save_path"]),
+        cm.rootdir,
+        typeof(cm.dataManager)()
+    )
+end
+
 
 haskey(self::ConfigManager, k::String) = k ∈ keys(self.spec)
 getindex(self::ConfigManager, param::String) = self.spec[param]
@@ -45,6 +56,42 @@ _checklists(self::ConfigManager) = joinpath(_data_root(self), "checklists")
 
 total_combinations(self::ConfigManager) = self.total_combinations
 
+struct _CM_Iterator{CM<:ConfigManager}
+    manager::CM
+    num_runs::Int
+end
+
+Base.length(iter::_CM_Iterator) = total_combinations(iter.manager)*iter.num_runs
+
+iterator(cm::ConfigManager, num_runs) = _CM_Iterator(cm, num_runs)
+
+function Base.iterate(iter::_CM_Iterator, state=(1,1))
+
+    if state[1] > total_combinations(iter.manager)
+        return nothing
+    end
+    
+    new_state = begin
+        if state[2] == iter.num_runs
+            (state[1] + 1, 1)
+        else
+            (state[1], state[2]+1)
+        end
+    end
+    cm = copy(iter.manager)
+
+    parse!(cm, state[1], state[2])
+    return cm, new_state
+    
+end
+
+
+
+"""
+    parse!
+
+    get spec while modifying config manager. repercusions.
+"""
 function parse!(self::ConfigManager, idx::Int, run::Int=1)
     self.spec = getPermutation(self.parsed_config, idx)
 
@@ -76,6 +123,7 @@ function params_with(self::ConfigManager, cfg_dict::Dict)
     end
     return indices
 end
+
 
 function get_expdir(self::ConfigManager)
     return joinpath(_output_root(self), self["save_path"])
@@ -147,3 +195,5 @@ function get_subconfig(self::ConfigManager, keys...)
     end
     return sub
 end
+
+
