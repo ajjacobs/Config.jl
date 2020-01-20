@@ -81,7 +81,7 @@ function Base.iterate(iter::_CM_Iterator, state=(1,1))
     cm = copy(iter.manager)
 
     parse!(cm, state[1], state[2])
-    return cm, new_state
+    return ((state[1]-1)*iter.num_runs + state[2], cm), new_state
     
 end
 
